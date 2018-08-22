@@ -30,13 +30,22 @@ public class AmqpMessagingSpanExtractor implements SpanExtractor<Message> {
   public Span joinTrace(Message message) {
     final AmqpMessageHeaderAccessor accessor = AmqpMessageHeaderAccessor.getAccessor(message);
 
-    if ((!hasHeader(accessor, Span.TRACE_ID_NAME) || !hasHeader(accessor, Span.SPAN_ID_NAME))
-        && (!hasHeader(accessor, TraceMessageHeaders.SPAN_ID_NAME)
-            || !hasHeader(accessor, TraceMessageHeaders.TRACE_ID_NAME))) {
-      return null;
+    if(hasHeader(accessor, Span.TRACE_ID_NAME) && hasHeader(accessor, Span.SPAN_ID_NAME))
+    {
+      return extractSpanFromHeaders(
+        accessor,
+        Span.builder(),
+        Span.TRACE_ID_NAME,
+        Span.SPAN_ID_NAME,
+        Span.SAMPLED_NAME,
+        Span.PROCESS_ID_NAME,
+        Span.SPAN_NAME_NAME,
+        Span.PARENT_ID_NAME);
     }
-
-    return extractSpanFromHeaders(
+    
+    if(hasHeader(accessor, TraceMessageHeaders.TRACE_ID_NAME) && hasHeader(accessor, TraceMessageHeaders.SPAN_ID_NAME))
+    {
+      return extractSpanFromHeaders(
         accessor,
         Span.builder(),
         TraceMessageHeaders.TRACE_ID_NAME,
@@ -45,6 +54,10 @@ public class AmqpMessagingSpanExtractor implements SpanExtractor<Message> {
         TraceMessageHeaders.PROCESS_ID_NAME,
         TraceMessageHeaders.SPAN_NAME_NAME,
         TraceMessageHeaders.PARENT_ID_NAME);
+    }
+    
+    return null;
+    
   }
 
   private Span extractSpanFromHeaders(
